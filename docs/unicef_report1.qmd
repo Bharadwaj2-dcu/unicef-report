@@ -1,0 +1,194 @@
+---
+title: "UNICEF Global Indicator Report"
+subtitle: "Spring 2025 BAA1030 Data Analytics & Story Telling (20074)"
+    
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    number-sections: true
+    embed-resources: true
+    code-fold: true
+    theme: cosmo
+    page-layout: full
+    smooth-scroll: true
+
+---
+
+## Student Information
+
+**Programme:** MSc in Management (Strategy)  
+**Author:** Bharadwaj Pothula
+**Student ID:** A00047536
+
+# UNICEF Global Indicator Report
+
+## About the Project
+
+This data story is developed as part of the **MSc in Management (Strategy)**. 
+The objective is to explore global UNICEF indicators affecting child well-being and present key insights using visual analytics techniques.
+
+
+---
+
+# About the Dataset
+
+The dataset used for this project is sourced from UNICEF’s open-access indicators on child development, education, health, and welfare. Data cleaning and preparation were carried out to ensure consistency and usability in visualization and analysis.
+
+---
+
+
+## Data Preview
+
+A preview of the dataset used in this analysis:
+
+```{python}
+
+import pandas as pd
+df = pd.read_csv("unicef_indicator_cleaned.csv")
+df.head()
+
+```
+
+---
+
+## World Indicator Map
+
+This map visualizes the distribution of a selected indicator value across countries. It helps identify global regions with higher or lower performance on key metrics relevant to child well-being. The world map reveals strong regional disparities in child well-being indicators.
+Higher values cluster in developed regions, while lower values dominate parts of Africa and South Asia.
+
+```{python}
+import geopandas as gpd
+import matplotlib.pyplot as plt
+
+# Load the shapefile
+shapefile_path = r'C:\Users\satya\OneDrive\Desktop\docs\ne_110m_admin_0_countries.shp'
+world = gpd.read_file(shapefile_path)
+
+# Merge with your data
+map_data = world.merge(df, left_on='ADMIN', right_on='country')
+
+# Plot using geopandas
+ax = map_data.plot(column='obs_value', cmap='coolwarm', legend=True, figsize=(10, 8), edgecolor='black')
+
+# Set plot title
+ax.set_title('World Indicator Map')
+
+# Show plot
+plt.show()
+
+```
+
+---
+
+## Time Series of Indicator Value
+
+This time series plot shows the trend of the indicator values over time for selected countries. It allows comparison of progress or regressions in key areas over the years.The time series shows different progress patterns over time.
+Some countries, like India, show gradual improvement, while others fluctuate or remain stagnant.
+
+```{python}
+import pandas as pd
+import geopandas as gpd
+from plotnine import ggplot, aes, geom_line, labs, theme_minimal
+
+# Convert time_period to datetime
+df['time_period'] = pd.to_datetime(df['time_period'], errors='coerce')
+
+# Plot the time trend for selected countries
+(
+    ggplot(df[df['country'].isin(['India', 'USA', 'Nigeria'])], aes('time_period', 'obs_value', color='country')) +
+    geom_line() +
+    labs(title='Time Trend in Selected Countries') +
+    theme_minimal()
+)
+
+```
+
+---
+
+## Value vs Age (Regression)
+
+This scatter plot with a regression line shows the relationship between the observed indicator value and the age variable, helping identify whether age has a significant influence on the outcome.The scatter plot suggests a moderate relationship between age and indicator values.
+Generally, observed values slightly increase or decrease with age depending on the indicator.
+
+```{python}
+import pandas as pd
+from plotnine import ggplot, aes, geom_point, geom_smooth, labs, theme_minimal
+
+# Drop rows with missing values in 'current_age' or 'obs_value'
+plot_df = df.dropna(subset=['current_age', 'obs_value'])
+
+# Check the number of rows after dropping NaNs
+if plot_df.shape[0] >= 2:  # Only add regression line if 2 or more data points
+    plot = (
+        ggplot(plot_df, aes('current_age', 'obs_value')) +
+        geom_point(alpha=0.5) +
+        geom_smooth(method='lm') +  # Add regression line
+        labs(title='Value vs Age') +
+        theme_minimal()
+    )
+else:
+    plot = (
+        ggplot(plot_df, aes('current_age', 'obs_value')) +
+        geom_point(alpha=0.5) +  # Just plot the points if not enough data
+        labs(title='Value vs Age (Insufficient data for regression)') +
+        theme_minimal()
+    )
+
+# Show the plot
+plot
+
+
+
+```
+---
+
+## Average Indicator Value by Country (Bar Plot)
+This bar chart shows the average observed indicator value for each country. It highlights which nations consistently perform higher or lower in child well-being indicators. The bar chart clearly ranks countries based on their average observed indicator values.
+It helps quickly identify the best- and worst-performing countries in child well-being outcomes.
+```{python}
+import pandas as pd
+from plotnine import ggplot, aes, geom_bar, coord_flip, labs, theme_minimal
+
+# Calculate average obs_value for each country
+bar_df = df.groupby('country', as_index=False)['obs_value'].mean()
+
+# Plot
+(
+    ggplot(bar_df, aes(x='reorder(country, obs_value)', y='obs_value')) +
+    geom_bar(stat='identity', fill='#0072B2') +
+    coord_flip() +  # Flip for better readability
+    labs(
+        title='Average Indicator Value by Country',
+        x='Country',
+        y='Average Observed Value'
+    ) +
+    theme_minimal()
+)
+
+
+```
+
+---
+
+## Summary & Key Takeaways
+
+- The world map highlights geographic disparities in the selected indicator.
+
+- Certain countries show consistently high or low values, indicating persistent patterns.
+
+- Time series analysis reveals varying trends across nations, suggesting different policy impacts or external conditions.
+
+- Regression analysis suggests a potential relationship between age and indicator values.
+
+These insights support UNICEF’s mission to guide resources and initiatives toward the most affected regions and populations.
+
+---
+
+## References
+- UNICEF Open Data Portal
+
+- Natural Earth shapefile dataset
+
+- Python libraries: pandas, geopandas, plotnine, matplotlib
+
